@@ -16,6 +16,6 @@ Install the current stable [.NET 10 SDK](https://dotnet.microsoft.com/en-us/down
 dotnet run --launch-profile http
 ```
 
-Send `GET http://127.0.0.1:5236/weatherforecast` or open `OTelDemo.http`.
+Send `GET http://127.0.0.1:5236/weatherforecast` or open `OTelDemo.http`. Look for the weather request in the console.
 
 See [the course index](https://github.com/trevoirwilliams/oteldemo#checkpoints) for intermediate lesson checkpoints. To compare without changing your working branch, open the checkpoint on GitHub.
