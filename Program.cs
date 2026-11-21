@@ -1,14 +1,30 @@
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
+const string activitySourceName = "OTelDemo.Activities";
+const string meterName = "OTelDemo.Meter";
+using var activitySource = new ActivitySource(activitySourceName);
+using var meter = new Meter(meterName, "1.0.0");
+var ordersProcessedCounter = meter.CreateCounter<long>("OrdersProcessed");
+
 builder.Services.AddOpenTelemetry()
-    .ConfigureResource(resource => resource.AddService("WeatherForecast API", serviceVersion: "1.0.0"))
+    .ConfigureResource(resource => resource.AddService("OTelDemo", serviceVersion: "1.0.0"))
     .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation(options => options.RecordException = true)
+        .AddHttpClientInstrumentation()
+        .AddSource(activitySourceName)
+        .AddConsoleExporter())
+    .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
+        .AddMeter(meterName)
+        .AddRuntimeInstrumentation()
         .AddConsoleExporter());
 
 var app = builder.Build();
@@ -36,6 +52,24 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+app.MapPost("/orders/{orderId:int}/process", (int orderId) =>
+{
+    using var activity = activitySource.StartActivity("ProcessOrder");
+    var cartSize = Random.Shared.Next(1, 6);
+
+    activity?.SetTag("order.id", orderId);
+    activity?.SetTag("cart.size", cartSize);
+    ordersProcessedCounter.Add(1);
+
+    return Results.Ok(new
+    {
+        OrderId = orderId,
+        Status = "Processed",
+        CartSize = cartSize
+    });
+})
+.WithName("ProcessOrder");
 
 app.Run();
 

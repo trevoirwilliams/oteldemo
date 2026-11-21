@@ -2,3 +2,11 @@
 
 GET {{host}}/weatherforecast
 Accept: application/json
+
+### Process one order
+POST {{host}}/orders/123/process
+Accept: application/json
+
+### Process a different order and check the same metric series
+POST {{host}}/orders/456/process
+Accept: application/json
